@@ -1,0 +1,117 @@
+{
+  "freeTextAnnotations": [],
+  "freeShapeAnnotations": [],
+  "trafficRateAnnotations": [],
+  "groupStyleAnnotations": [],
+  "networkNodeAnnotations": [],
+  "nodeAnnotations": [
+    {
+      "id": "isp",
+      "interfacePattern": "e0/{n}",
+      "position": {
+        "x": 240,
+        "y": 220
+      }
+    },
+    {
+      "id": "hq",
+      "interfacePattern": "Gi{n}",
+      "position": {
+        "x": 360,
+        "y": 360
+      }
+    },
+    {
+      "id": "br1",
+      "interfacePattern": "e0/{n}",
+      "position": {
+        "x": 440,
+        "y": 280
+      }
+    },
+    {
+      "id": "br2",
+      "interfacePattern": "e0/{n}",
+      "position": {
+        "x": 340,
+        "y": 80
+      }
+    },
+    {
+      "id": "hq-sw",
+      "interfacePattern": "e0/{n}",
+      "position": {
+        "x": 560,
+        "y": 280
+      }
+    },
+    {
+      "id": "dmz-sw",
+      "interfacePattern": "e0/{n}",
+      "position": {
+        "x": 320,
+        "y": 540
+      }
+    },
+    {
+      "id": "br1-sw",
+      "interfacePattern": "e0/{n}",
+      "position": {
+        "x": 580,
+        "y": 420
+      }
+    },
+    {
+      "id": "ext-srv",
+      "position": {
+        "x": 100,
+        "y": 140
+      }
+    },
+    {
+      "id": "hq-pc1",
+      "position": {
+        "x": 740,
+        "y": 300
+      }
+    },
+    {
+      "id": "hq-pc2",
+      "position": {
+        "x": 700,
+        "y": 180
+      }
+    },
+    {
+      "id": "dmz-srv",
+      "position": {
+        "x": 300,
+        "y": 700
+      }
+    },
+    {
+      "id": "br1-pc1",
+      "position": {
+        "x": 560,
+        "y": 600
+      }
+    },
+    {
+      "id": "br1-pc2",
+      "position": {
+        "x": 720,
+        "y": 540
+      }
+    },
+    {
+      "id": "br2-pc",
+      "position": {
+        "x": 340,
+        "y": 240
+      }
+    }
+  ],
+  "edgeAnnotations": [],
+  "aliasEndpointAnnotations": [],
+  "viewerSettings": {}
+}

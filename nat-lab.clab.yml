@@ -1,0 +1,168 @@
+# =============================================================================
+#  NAT Extensive Lab - Containerlab
+#  Scenarios: Static NAT, Static PAT, Dynamic NAT, PAT Overload,
+#             Policy NAT, Twice NAT, NAT Hairpinning
+# =============================================================================
+name: nat-lab
+
+mgmt:
+  network: nat-lab-mgmt
+  ipv4-subnet: 172.20.20.0/24
+
+topology:
+  # ─── Default node properties ───
+  kinds:
+    cisco_iol:
+      image: ghcr.io/arthur-k-99/cisco-iol:17.15.01
+    cisco_c8000v:
+      image: ghcr.io/arthur-k-99/cisco-c8000v:17.11.01a
+    linux:
+      image: ghcr.io/hellt/network-multitool:latest
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  #  NODES
+  # ═══════════════════════════════════════════════════════════════════════════
+  nodes:
+    # ─────────────────────────────────────────────
+    #  ISP Router (IOL) - Internet backbone
+    # ─────────────────────────────────────────────
+    isp:
+      kind: cisco_iol
+      startup-config: configs/isp.partial.cfg
+
+    # ─────────────────────────────────────────────
+    #  External Server (Linux) - Internet host
+    # ─────────────────────────────────────────────
+    ext-srv:
+      kind: linux
+      exec:
+        - ip addr add 203.0.113.100/24 dev eth1
+        - ip route add 198.51.100.0/24 via 203.0.113.1
+        - ip route add 100.64.0.0/22 via 203.0.113.1
+        - ip route add 192.168.0.0/16 via 203.0.113.1
+        # Start HTTP server for NAT testing
+        - python3 -c "import http.server; http.server.HTTPServer(('',80), http.server.SimpleHTTPRequestHandler).serve_forever" &
+
+    # ─────────────────────────────────────────────
+    #  HQ Router (C8000v) - Main NAT device
+    #  Scenarios: Static NAT, Static PAT, Dynamic
+    #  NAT Pool, NAT Hairpinning, Twice NAT target
+    # ─────────────────────────────────────────────
+    hq:
+      kind: cisco_c8000v
+      startup-config: configs/hq.cfg
+
+    # ─────────────────────────────────────────────
+    #  Branch 1 Router (IOL)
+    #  Scenarios: PAT Overload, Policy NAT
+    # ─────────────────────────────────────────────
+    br1:
+      kind: cisco_iol
+      startup-config: configs/br1.partial.cfg
+
+    # ─────────────────────────────────────────────
+    #  Branch 2 Router (IOL)
+    #  Scenario: Twice NAT (overlapping subnets)
+    # ─────────────────────────────────────────────
+    br2:
+      kind: cisco_iol
+      startup-config: configs/br2.partial.cfg
+
+    # ─────────────────────────────────────────────
+    #  LAN Switches (IOL-L2)
+    # ─────────────────────────────────────────────
+    hq-sw:
+      kind: cisco_iol
+      image: ghcr.io/arthur-k-99/cisco-iol-l2:17.15.01
+      type: l2
+
+    dmz-sw:
+      kind: cisco_iol
+      image: ghcr.io/arthur-k-99/cisco-iol-l2:17.15.01
+      type: l2
+
+    br1-sw:
+      kind: cisco_iol
+      image: ghcr.io/arthur-k-99/cisco-iol-l2:17.15.01
+      type: l2
+
+    # ─────────────────────────────────────────────
+    #  End Hosts (Linux containers)
+    # ─────────────────────────────────────────────
+    hq-pc1:
+      kind: linux
+      exec:
+        - ip addr add 192.168.10.10/24 dev eth1
+        - ip route replace default via 192.168.10.1
+
+    hq-pc2:
+      kind: linux
+      exec:
+        - ip addr add 192.168.10.11/24 dev eth1
+        - ip route replace default via 192.168.10.1
+
+    dmz-srv:
+      kind: linux
+      exec:
+        - ip addr add 172.16.0.100/24 dev eth1
+        - ip route replace default via 172.16.0.1
+        # Start web server on port 80 and 443
+        - python3 -c "import http.server; http.server.HTTPServer(('',80), http.server.SimpleHTTPRequestHandler).serve_forever" &
+        - python3 -c "import http.server; http.server.HTTPServer(('',443), http.server.SimpleHTTPRequestHandler).serve_forever" &
+
+    br1-pc1:
+      kind: linux
+      exec:
+        - ip addr add 192.168.20.10/24 dev eth1
+        - ip route replace default via 192.168.20.1
+
+    br1-pc2:
+      kind: linux
+      exec:
+        - ip addr add 192.168.20.11/24 dev eth1
+        - ip route replace default via 192.168.20.1
+
+    br2-pc:
+      kind: linux
+      exec:
+        - ip addr add 192.168.10.10/24 dev eth1
+        - ip route replace default via 192.168.10.1
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  #  LINKS
+  # ═══════════════════════════════════════════════════════════════════════════
+  links:
+    # ── ISP to External Server ──
+    - endpoints: ["isp:Ethernet0/1", "ext-srv:eth1"]
+
+    # ── ISP to HQ ──
+    - endpoints: ["isp:Ethernet0/2", "hq:GigabitEthernet2"]
+
+    # ── ISP to Branch 1 ──
+    - endpoints: ["isp:Ethernet0/3", "br1:Ethernet0/1"]
+
+    # ── ISP to Branch 2 ──
+    - endpoints: ["isp:Ethernet1/0", "br2:Ethernet0/1"]
+
+    # ── HQ to HQ LAN Switch ──
+    - endpoints: ["hq:GigabitEthernet3", "hq-sw:Ethernet0/1"]
+
+    # ── HQ to DMZ Switch ──
+    - endpoints: ["hq:GigabitEthernet4", "dmz-sw:Ethernet0/1"]
+
+    # ── HQ LAN Switch to PCs ──
+    - endpoints: ["hq-sw:Ethernet0/2", "hq-pc1:eth1"]
+    - endpoints: ["hq-sw:Ethernet0/3", "hq-pc2:eth1"]
+
+    # ── DMZ Switch to DMZ Server ──
+    - endpoints: ["dmz-sw:Ethernet0/2", "dmz-srv:eth1"]
+
+    # ── BR1 to BR1 LAN Switch ──
+    - endpoints: ["br1:Ethernet0/2", "br1-sw:Ethernet0/1"]
+
+    # ── BR1 LAN Switch to PCs ──
+    - endpoints: ["br1-sw:Ethernet0/2", "br1-pc1:eth1"]
+    - endpoints: ["br1-sw:Ethernet0/3", "br1-pc2:eth1"]
+
+    # ── BR2 to BR2 PC (direct link, no switch needed) ──
+    - endpoints: ["br2:Ethernet0/2", "br2-pc:eth1"]
