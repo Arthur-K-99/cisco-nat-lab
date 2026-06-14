@@ -185,7 +185,7 @@ Translates addresses within specific Virtual Routing and Forwarding (VRF) tables
 
 ### Diagnostic CLI Outputs
 
-#### 1. Interpreting `debug ip nat`
+#### 1. Interpreting `debug ip nat` (Legacy IOS / CPU-bound)
 ```text
 NAT*: s=192.168.10.10->198.51.100.16, d=203.0.113.100 [5893]
 ```
@@ -193,7 +193,31 @@ NAT*: s=192.168.10.10->198.51.100.16, d=203.0.113.100 [5893]
 - **`d=203.0.113.100`**: Destination address.
 - **`[5893]`**: IP Packet identification number.
 
-#### 2. Clearing NAT Translations safely
+#### 2. IOS-XE Data Plane Debugging (QFP Platform Packet Trace)
+On modern IOS-XE platforms (like ASR1000, ISR4000, and C8000v), NAT packets are processed in the hardware/QFP data plane. Traditional `debug ip nat` commands do not capture hardware-forwarded traffic and require an access list.
+To trace data plane NAT translation:
+1. Define a trace condition (e.g., target destination IP address):
+   ```text
+   debug platform condition ipv4 <target-ip>/32 ingress
+   ```
+2. Enable packet trace and start the capture:
+   ```text
+   debug platform packet-trace packet 16
+   debug platform condition start
+   ```
+3. Generate traffic, then display the results:
+   ```text
+   show platform packet-trace summary
+   show platform packet-trace packet 0
+   ```
+4. Stop debugging and clear resources:
+   ```text
+   debug platform condition stop
+   clear platform packet-trace statistics
+   no debug platform condition ipv4 <target-ip>/32 ingress
+   ```
+
+#### 3. Clearing NAT Translations safely
 > [!WARNING]
 > Clearing the NAT translation table will disrupt active TCP and UDP connections. Avoid running wildcard clears in production.
 - **Clear specific translation**:

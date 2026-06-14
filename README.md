@@ -993,13 +993,33 @@ HQ# show ip nat translations
 # Step 4: Compare — also test direct internal access (should also work)
 docker exec -it clab-nat-lab-hq-pc1 curl -s http://172.16.0.100
 
-# Step 5: Debug to see the double translation
-HQ# debug ip nat
-HQ# terminal monitor
+# Step 5: Debug NAT on HQ (C8000v / IOS-XE)
+# Note: Since C8000v runs IOS-XE, NAT is processed in the QFP data plane. Traditional
+# "debug ip nat" is ineffective for data plane forwarding and requires an ACL.
+# Use the platform packet-trace feature instead:
+HQ# debug platform condition ipv4 198.51.100.10/32 ingress
+HQ# debug platform packet-trace packet 16
+HQ# debug platform condition start
+
+# Generate traffic from hq-pc1
 docker exec -it clab-nat-lab-hq-pc1 curl -s http://198.51.100.10
-# Look for:
-#   NAT*: s=192.168.10.10->198.51.100.16, d=198.51.100.10->172.16.0.100
-HQ# undebug all
+
+# Check packet trace summary (shows packets forwarding between Gi3, Gi2, and Gi4)
+HQ# show platform packet-trace summary
+
+# Inspect packet trace details for translation details
+HQ# show platform packet-trace packet 0
+
+# Clean up
+HQ# debug platform condition stop
+HQ# clear platform packet-trace statistics
+HQ# no debug platform condition ipv4 198.51.100.10/32 ingress
+
+# Note (Legacy IOS / IOL only): For traditional CPU-based routers, debug works directly:
+# HQ# debug ip nat
+# HQ# terminal monitor
+# (Look for: NAT*: s=192.168.10.10->198.51.100.16, d=198.51.100.10->172.16.0.100)
+# HQ# undebug all
 ```
 
 #### 🎓 Key Learning Points
@@ -1050,16 +1070,24 @@ show route-map POLICY-NAT                   ! Specific route-map
 
 ```
 ! ─── Basic NAT Debug ───
-debug ip nat                                ! Shows each translation event
+debug ip nat                                ! Shows each translation event (Legacy / IOL)
 !   Format: NAT*: s=SRC->XLATED_SRC, d=DST->XLATED_DST [PORT]
 
 ! ─── Detailed NAT Debug ───
-debug ip nat detailed                       ! Verbose - shows ACL matches
+debug ip nat detailed                       ! Verbose - shows ACL matches (Legacy / IOL)
 !   Shows which ACL/route-map matched for each packet
 
 ! ─── Packet-level Debug (CAUTION: very verbose!) ───
 debug ip packet                             ! Full packet processing debug
 debug ip packet detail                      ! Even more detail
+
+! ─── IOS-XE / C8000v Platform Data Plane Debugging ───
+! Traditional debugs do not capture hardware-forwarded/QFP data plane packets.
+! To debug NAT on IOS-XE, use Platform Packet Trace:
+debug platform condition ipv4 <target-ip>/32 ingress   ! Set target IP filter
+debug platform packet-trace packet 16                  ! Enable trace buffer
+debug platform condition start                         ! Start tracing
+! (Then show results with 'show platform packet-trace summary' and 'show platform packet-trace packet 0')
 
 ! ─── Always enable terminal monitor first ───
 terminal monitor
@@ -1068,6 +1096,9 @@ terminal monitor
 undebug all
 ! or
 no debug all
+! and for IOS-XE platform trace:
+debug platform condition stop
+clear platform packet-trace statistics
 ```
 
 ### Clearing NAT State
@@ -1309,9 +1340,15 @@ show run | include ip nat inside source list
 ! 3. If source translation is missing, add PAT as a fallback:
 ip nat inside source list HQ-LAN-HOSTS interface GigabitEthernet2 overload
 
-! 4. Debug to see what's happening:
+! 4. Debug to see what's happening (Legacy IOS / IOL):
 debug ip nat
 ! Look for BOTH source and destination translations in the same line
+!
+! Or on IOS-XE (C8000v), use Platform Packet Trace to see QFP processing:
+debug platform condition ipv4 198.51.100.10/32 ingress
+debug platform packet-trace packet 16
+debug platform condition start
+! (Generate traffic, then view with 'show platform packet-trace summary')
 ```
 
 ### Issue 7: Linux Endpoint IP Not Configured
@@ -1415,8 +1452,9 @@ sudo containerlab save -t nat-lab.clab.yml
 
 | Command | Purpose |
 |---------|---------|
-| `debug ip nat` | Basic per-packet translation log |
-| `debug ip nat detailed` | Verbose with ACL/rule match info |
+| `debug ip nat` | Basic per-packet translation log (Legacy / IOL) |
+| `debug ip nat detailed` | Verbose with ACL/rule match info (Legacy / IOL) |
+| `debug platform packet-trace packet 16` | Debug IOS-XE data plane NAT via QFP |
 | `undebug all` | **Always run this when done!** |
 
 ### NAT Timeout Defaults
