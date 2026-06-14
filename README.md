@@ -4,6 +4,8 @@
 > in [Containerlab](https://containerlab.dev/) using Cisco IOS-XE (IOL & C8000v).
 > Covers **7 real-world NAT scenarios** from basic static NAT to advanced
 > twice-NAT with overlapping address spaces.
+>
+> 📘 **Detailed NAT Reference**: For a comprehensive, theoretical overview of all Cisco IOS-XE NAT concepts, architectures, packet flows, and commands, refer to the [Cisco IOS-XE NAT Guide](file:///home/clab/cisco-nat-lab/CISCO_IOS_XE_NAT_GUIDE.md).
 
 ---
 
@@ -624,10 +626,10 @@ ip nat inside source list PAT-GENERAL interface Ethernet0/1 overload
 
 ```bash
 # Step 1: From br1-pc1, curl the external server
-docker exec -it clab-nat-lab-br1-pc1 curl -s http://198.51.100.1
+docker exec -it clab-nat-lab-br1-pc1 curl -s http://203.0.113.100
 
 # Step 2: Simultaneously from br1-pc2
-docker exec -it clab-nat-lab-br1-pc2 curl -s http://198.51.100.1
+docker exec -it clab-nat-lab-br1-pc2 curl -s http://203.0.113.100
 
 # Step 3: On ext-srv, capture packets to see the source
 docker exec -it clab-nat-lab-ext-srv tcpdump -i eth1 -n -c 10
@@ -635,8 +637,8 @@ docker exec -it clab-nat-lab-ext-srv tcpdump -i eth1 -n -c 10
 # Step 4: Check translations on BR1
 BR1# show ip nat translations
 # Expected: Both PCs share 100.64.0.2 but with different ports
-# tcp 100.64.0.2:1024    192.168.20.10:49001  198.51.100.1:80   198.51.100.1:80
-# tcp 100.64.0.2:1025    192.168.20.11:49002  198.51.100.1:80   198.51.100.1:80
+# tcp 100.64.0.2:1024    192.168.20.10:49001  203.0.113.100:80   203.0.113.100:80
+# tcp 100.64.0.2:1025    192.168.20.11:49002  203.0.113.100:80   203.0.113.100:80
 
 # Step 5: Check stats
 BR1# show ip nat statistics
@@ -674,7 +676,8 @@ ip access-list extended POLICY-NAT-TO-PARTNER
 route-map POLICY-NAT permit 10
  match ip address POLICY-NAT-TO-PARTNER
 
-ip nat inside source route-map POLICY-NAT interface Ethernet0/1 overload
+ip nat pool BR1-POLICY-POOL 100.64.0.10 100.64.0.10 netmask 255.255.255.252
+ip nat inside source route-map POLICY-NAT pool BR1-POLICY-POOL overload
 ```
 
 #### 🔬 How It Works
@@ -799,9 +802,9 @@ BR2# terminal monitor
 # Generate traffic and watch BOTH translations happen per packet
 ```
 
-#### ⚠️ Additional Setup Required
+#### ℹ️ Routing Pre-Configuration
 
-For full end-to-end connectivity, ensure these routes exist:
+For full end-to-end connectivity, the following routes have been pre-configured in the startup configurations of the ISP, HQ, and BR2 routers:
 
 | Device | Route | Next Hop | Purpose |
 |--------|-------|----------|---------|
@@ -853,28 +856,28 @@ interface GigabitEthernet4
  ip nat inside          ! ← dmz-srv is here
 ```
 
-> **No additional config needed!** IOS-XE handles inside-to-inside hairpinning
-> automatically with static NAT entries.
+> **Note on Routing Reflection:** In this classic NAT configuration (using `ip nat inside`/`outside`), the hairpin traffic routes out to the ISP and is reflected back. This occurs because the routing decision takes place before inside-to-outside source translation. The destination IP `198.51.100.10` is routed via the default gateway towards the ISP, which then routes it back to HQ's outside WAN IP, triggering destination NAT.
 
-#### 🔬 How It Works
+#### 🔬 How It Works (ISP-Reflection Path)
 
 ```
   Step 1: hq-pc1 sends packet
-          src=192.168.10.10  dst=198.51.100.10
-                                  ↑ public IP of DMZ server
+          src=192.168.10.10  dst=198.51.100.10 (DMZ server public IP)
 
-  Step 2: Arrives on HQ Gi3 (ip nat inside)
-          Router sees dst matches a NAT "inside global" address
-          Translates dst: 198.51.100.10 → 172.16.0.100
+  Step 2: Arrives on HQ Gi3 (inside). Routing determines the destination
+          is reachable via the default route out Gi2 (outside).
+          As it exits Gi2, source NAT translates:
+          src: 192.168.10.10 → 198.51.100.16 (from Dynamic pool)
 
-  Step 3: Router also translates src (from Dynamic NAT / PAT pool):
-          src: 192.168.10.10 → 198.51.100.16
+  Step 3: Packet travels to ISP router (198.51.100.1) and is routed
+          back to HQ's public WAN IP (198.51.100.2).
 
-  Step 4: Forwards out Gi4 (ip nat inside → inside = hairpin)
-          Packet on wire: src=198.51.100.16  dst=172.16.0.100
+  Step 4: Arrives back on HQ Gi2 (outside). Destination NAT translates:
+          dst: 198.51.100.10 → 172.16.0.100 (DMZ server private IP)
+          Packet is routed out Gi4 (inside) to the DMZ server.
 
-  Step 5: dmz-srv responds to 198.51.100.16
-          Return traffic follows same NAT path in reverse
+  Step 5: dmz-srv responds to 198.51.100.16. The reply travels in reverse,
+          reflecting through the ISP to reach hq-pc1.
 ```
 
 #### ✅ Verification
@@ -1372,24 +1375,3 @@ to use these images in your environment.
 > If you encounter any issues not covered above, use `debug ip nat detailed`
 > and `show ip nat translations verbose` — they will tell you exactly what's
 > happening with every packet.
-```
-
-That completes the full README. Here's a summary of everything included:
-
-| Section | Content |
-|---|---|
-| **Overview** | Lab purpose, features table, why this lab |
-| **Topology Diagram** | ASCII art with all devices and subnets |
-| **Scenarios Table** | All 7 scenarios at a glance |
-| **Prerequisites** | Hardware, software, images checklist |
-| **IP Addressing Plan** | WAN links, LAN segments, NAT ranges |
-| **File Structure** | Directory layout with explanations |
-| **Deployment** | Step-by-step deploy, monitor, verify |
-| **Accessing Devices** | SSH commands for routers, docker exec for Linux |
-| **7 Scenario Walkthroughs** | Each with Concept → Config → How It Works → Verification → Key Learnings |
-| **Debugging & Troubleshooting** | Show commands, debug commands, NAT order of operations |
-| **Theory Reference** | Terminology, visual reference, type comparison, decision flowchart, RFCs |
-| **Common Issues & Fixes** | 8 common problems with step-by-step solutions |
-| **Cleanup** | Destroy, clean residuals, save configs |
-| **Quick Reference Card** | Config commands, show commands, debug commands, timeouts |
-| **Resources** | Cisco docs, Containerlab docs, relevant RFCs |

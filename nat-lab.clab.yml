@@ -40,8 +40,6 @@ topology:
         - ip route add 198.51.100.0/24 via 203.0.113.1
         - ip route add 100.64.0.0/22 via 203.0.113.1
         - ip route add 192.168.0.0/16 via 203.0.113.1
-        # Start HTTP server for NAT testing
-        - python3 -c "import http.server; http.server.HTTPServer(('',80), http.server.SimpleHTTPRequestHandler).serve_forever" &
 
     # ─────────────────────────────────────────────
     #  HQ Router (C8000v) - Main NAT device
@@ -106,9 +104,6 @@ topology:
       exec:
         - ip addr add 172.16.0.100/24 dev eth1
         - ip route replace default via 172.16.0.1
-        # Start web server on port 80 and 443
-        - python3 -c "import http.server; http.server.HTTPServer(('',80), http.server.SimpleHTTPRequestHandler).serve_forever" &
-        - python3 -c "import http.server; http.server.HTTPServer(('',443), http.server.SimpleHTTPRequestHandler).serve_forever" &
 
     br1-pc1:
       kind: linux
