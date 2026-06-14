@@ -793,19 +793,28 @@ BR1# undebug all
 
 #### 📖 Concept
 
-Twice NAT translates **both source AND destination** addresses in the same
-packet. This is necessary when two sites use **identical IP ranges**
-(overlapping/conflicting address spaces) and need to communicate with each other.
+Twice NAT translates **both source AND destination** addresses in the same packet. This is necessary when two sites use **identical IP ranges** (overlapping/conflicting address spaces) and need to communicate with each other.
 
-**The problem:**
-- HQ LAN: `192.168.10.0/24`
-- BR2 LAN: `192.168.10.0/24` ← Same subnet!
-- Standard routing cannot distinguish the two networks
+##### ⚠️ The Problem (Address Space Overlap)
+* **HQ LAN:** `192.168.10.0/24` (includes `hq-pc1` at `192.168.10.10`)
+* **BR2 LAN:** `192.168.10.0/24` (includes `br2-pc` at `192.168.10.10`)
+* If `br2-pc` tries to send a packet directly to `192.168.10.10` (thinking it's the HQ host), the OS on `br2-pc` sees that the destination is in its local subnet. It will broadcast an ARP request locally instead of sending it to the default gateway router (`BR2`).
+* If we solved this with only Source NAT on `BR2` (translating `192.168.10.10` ↔ `10.10.10.10`), `br2-pc` would still need to target the actual IP of `hq-pc1` (`192.168.10.10`). But standard IP routing cannot route to a destination that overlaps with the local interface subnet.
 
-**The solution:**
-- Translate BR2's source: `192.168.10.10` → `10.10.10.10`
-- Translate HQ's addresses (as seen by BR2): `192.168.10.10` → `10.20.20.10`
-- BR2 hosts communicate with HQ hosts using the "virtual" `10.20.20.0/24` range
+##### 🛠️ The Solution (Twice NAT)
+To work around this, we map both sides to new, non-overlapping virtual subnets:
+1. **Source Translation (Inside Local ↔ Inside Global):**
+   `BR2` translates its local source `192.168.10.10` to a unique global IP `10.10.10.10`.
+   `ip nat inside source static 192.168.10.10 10.10.10.10`
+2. **Destination Translation (Outside Local ↔ Outside Global):**
+   `BR2` translates a virtual destination IP `10.20.20.10` representing the HQ host to the actual IP `192.168.10.10`.
+   `ip nat outside source static 192.168.10.10 10.20.20.10`
+3. **The Communication Flow:**
+   * `br2-pc` initiates communication by sending a packet to the virtual address **`10.20.20.10`**.
+   * `BR2` translates the source (`192.168.10.10` ↔ `10.10.10.10`) and the destination (`10.20.20.10` ↔ `192.168.10.10`).
+   * The transit routers (ISP) route the packet based on destination `192.168.10.10`.
+   * `hq-pc1` receives the packet with source `10.10.10.10` and destination `192.168.10.10`. It replies to `10.10.10.10`.
+   * The reply packet is routed back to `BR2` (via the ISP router), which translates the source (`192.168.10.10` ↔ `10.20.20.10`) and destination (`10.10.10.10` ↔ `192.168.10.10`).
 
 #### 🔧 Configuration (on BR2)
 
@@ -821,6 +830,17 @@ ip route 10.20.20.0 255.255.255.0 100.64.0.5
 ```
 
 #### 🔬 How It Works
+
+##### Detailed Header Translations
+
+| Step | Location | Source IP | Destination IP | Description |
+|------|----------|-----------|----------------|-------------|
+| **1** | Leaving `br2-pc` | `192.168.10.10` | `10.20.20.10` | Initiated by the client |
+| **2** | Leaving `BR2` (post-NAT) | `10.10.10.10` | `192.168.10.10` | Both IPs translated |
+| **3** | Arriving at `hq-pc1` | `10.10.10.10` | `192.168.10.10` | Delivered to destination |
+| **4** | Leaving `hq-pc1` (reply) | `192.168.10.10` | `10.10.10.10` | Reply sent back |
+| **5** | Entering `BR2` (pre-NAT) | `192.168.10.10` | `10.10.10.10` | Arrives from WAN |
+| **6** | Arriving at `br2-pc` | `10.20.20.10` | `192.168.10.10` | Final delivery |
 
 ```mermaid
 sequenceDiagram
@@ -845,12 +865,12 @@ sequenceDiagram
 
 #### ✅ Verification
 
+All necessary static routing is **pre-configured** in the startup configurations of `HQ` and `ISP`, so you do not need to manually add routes.
+
 ```bash
-# Step 1: Ensure HQ has a route back to BR2's translated range
-# (SSH into HQ and add if not present)
-HQ# configure terminal
-HQ(config)# ip route 10.10.10.0 255.255.255.0 198.51.100.1
-HQ(config)# end
+# Step 1: Verify that HQ has the routing entry for BR2's translated range (10.10.10.0/24)
+HQ# show ip route 10.10.10.0
+# Expected output shows: Known via "static", via 198.51.100.1 (ISP)
 
 # Step 2: From BR2-PC, ping HQ-PC1 via the virtual address
 docker exec -it clab-nat-lab-br2-pc ping -c 3 10.20.20.10
@@ -861,13 +881,14 @@ BR2# show ip nat translations
 #   Pro Inside global   Inside local     Outside local    Outside global
 #   --- 10.10.10.10     192.168.10.10    192.168.10.10    10.20.20.10
 
-# Step 4: Tcpdump on HQ to verify received source IP
+# Step 4: Verify the source IP received by HQ-PC1 is 10.10.10.10
 docker exec -it clab-nat-lab-hq-pc1 tcpdump -i eth1 -n -c 5
 
-# Step 5: Debug NAT on BR2
+# Step 5: Debug NAT on BR2 to see the double translation events
 BR2# debug ip nat
 BR2# terminal monitor
-# Generate traffic and watch BOTH translations happen per packet
+# (Generate traffic from BR2-PC again to view output, then undebug all)
+BR2# undebug all
 ```
 
 #### ℹ️ Routing Pre-Configuration
@@ -882,11 +903,11 @@ For full end-to-end connectivity, the following routes have been pre-configured 
 
 #### 🎓 Key Learning Points
 
-- Twice NAT solves the overlapping address problem without renumbering
-- Both `ip nat inside source` and `ip nat outside source` are used
-- The "virtual" address space (10.20.20.0/24) only exists in BR2's NAT table
-- Routing must be consistent — all transit devices need correct routes
-- This is a common scenario in mergers/acquisitions and VPN connectivity
+- Twice NAT solves the overlapping address problem without renumbering either site.
+- Both `ip nat inside source` and `ip nat outside source` are used in tandem.
+- The virtual address spaces (`10.10.10.0/24` and `10.20.20.0/24`) decouple the overlapping local ranges.
+- Proper intermediate routing is critical; all routers in transit must have static routes for the non-overlapping IP namespaces to ensure packets flow correctly.
+- This is a common scenario in mergers/acquisitions and VPN connectivity.
 
 ---
 
