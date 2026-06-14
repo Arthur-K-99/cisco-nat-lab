@@ -1,0 +1,71 @@
+---
+hq:
+    username: admin
+    password: admin
+    platform: cisco_c8000v
+    hostname: 172.20.20.15
+br1:
+    username: admin
+    password: admin
+    platform: cisco_iol
+    hostname: 172.20.20.2
+br1-sw:
+    username: admin
+    password: admin
+    platform: cisco_iol
+    hostname: 172.20.20.13
+br2:
+    username: admin
+    password: admin
+    platform: cisco_iol
+    hostname: 172.20.20.11
+dmz-sw:
+    username: admin
+    password: admin
+    platform: cisco_iol
+    hostname: 172.20.20.12
+hq-sw:
+    username: admin
+    password: admin
+    platform: cisco_iol
+    hostname: 172.20.20.14
+isp:
+    username: admin
+    password: admin
+    platform: cisco_iol
+    hostname: 172.20.20.7
+br1-pc1:
+    username: 
+    password: 
+    platform: linux
+    hostname: 172.20.20.8
+br1-pc2:
+    username: 
+    password: 
+    platform: linux
+    hostname: 172.20.20.5
+br2-pc:
+    username: 
+    password: 
+    platform: linux
+    hostname: 172.20.20.6
+dmz-srv:
+    username: 
+    password: 
+    platform: linux
+    hostname: 172.20.20.3
+ext-srv:
+    username: 
+    password: 
+    platform: linux
+    hostname: 172.20.20.10
+hq-pc1:
+    username: 
+    password: 
+    platform: linux
+    hostname: 172.20.20.9
+hq-pc2:
+    username: 
+    password: 
+    platform: linux
+    hostname: 172.20.20.4

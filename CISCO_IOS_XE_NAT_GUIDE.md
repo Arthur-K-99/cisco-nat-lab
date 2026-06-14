@@ -20,7 +20,7 @@ Understanding the order of operations is critical. It determines whether routing
 
 ```
   ┌─────────────────────────────────────────────────────────┐
-  │              INSIDE → OUTSIDE Traffic Flow               │
+  │              INSIDE → OUTSIDE Traffic Flow              │
   │                                                         │
   │  1. Routing decision (uses INSIDE LOCAL address)        │
   │  2. Check ip nat inside source rules                    │
@@ -29,7 +29,7 @@ Understanding the order of operations is critical. It determines whether routing
   └─────────────────────────────────────────────────────────┘
 
   ┌─────────────────────────────────────────────────────────┐
-  │              OUTSIDE → INSIDE Traffic Flow               │
+  │              OUTSIDE → INSIDE Traffic Flow              │
   │                                                         │
   │  1. Translate destination (INSIDE GLOBAL → LOCAL)       │
   │  2. Routing decision (uses INSIDE LOCAL address)        │

@@ -419,16 +419,22 @@ interface GigabitEthernet4
 
 #### 🔬 How It Works
 
-```
-                  INSIDE                              OUTSIDE
-  dmz-srv                    HQ Router                         ext-srv
- 172.16.0.100  ──────>  NAT Translation  ──────>  203.0.113.100
-               src: 172.16.0.100        src: 198.51.100.10
-               dst: 203.0.113.100       dst: 203.0.113.100
+```mermaid
+sequenceDiagram
+    autonumber
+    actor dmz as dmz-srv (172.16.0.100)
+    participant hq as HQ Router (NAT)
+    actor ext as ext-srv (203.0.113.100)
 
- 172.16.0.100  <──────  NAT Translation  <──────  203.0.113.100
-               src: 203.0.113.100       src: 203.0.113.100
-               dst: 172.16.0.100        dst: 198.51.100.10
+    Note over dmz,ext: Outbound Translation (Inside to Outside)
+    dmz->>hq: Packet (src=172.16.0.100, dst=203.0.113.100)
+    Note over hq: Translate source:<br/>172.16.0.100 -> 198.51.100.10
+    hq->>ext: Packet (src=198.51.100.10, dst=203.0.113.100)
+
+    Note over dmz,ext: Inbound Translation (Outside to Inside)
+    ext->>hq: Packet (src=203.0.113.100, dst=198.51.100.10)
+    Note over hq: Translate destination:<br/>198.51.100.10 -> 172.16.0.100
+    hq->>dmz: Packet (src=203.0.113.100, dst=172.16.0.100)
 ```
 
 #### ✅ Verification
@@ -479,12 +485,22 @@ ip nat inside source static tcp 172.16.0.100 443 198.51.100.2 8443
 
 #### 🔬 How It Works
 
-```
-  ext-srv                                              dmz-srv
-  203.0.113.100                                        172.16.0.100
+```mermaid
+sequenceDiagram
+    autonumber
+    actor ext as ext-srv (203.0.113.100)
+    participant hq as HQ Router (NAT)
+    actor dmz as dmz-srv (172.16.0.100)
 
-  dst: 198.51.100.2:8080  ──>  NAT  ──>  dst: 172.16.0.100:80
-  dst: 198.51.100.2:8443  ──>  NAT  ──>  dst: 172.16.0.100:443
+    Note over ext,dmz: Inbound HTTP (Port 8080 -> 80)
+    ext->>hq: Packet (dst=198.51.100.2:8080)
+    Note over hq: Translate destination:<br/>198.51.100.2:8080 -> 172.16.0.100:80
+    hq->>dmz: Packet (dst=172.16.0.100:80)
+
+    Note over ext,dmz: Inbound HTTPS (Port 8443 -> 443)
+    ext->>hq: Packet (dst=198.51.100.2:8443)
+    Note over hq: Translate destination:<br/>198.51.100.2:8443 -> 172.16.0.100:443
+    hq->>dmz: Packet (dst=172.16.0.100:443)
 ```
 
 #### ✅ Verification
@@ -543,12 +559,19 @@ ip nat inside source list HQ-LAN-HOSTS pool HQ-PUBLIC-POOL
 
 #### 🔬 How It Works
 
-```
-  hq-pc1 (192.168.10.10) ──> Gets 198.51.100.16 from pool
-  hq-pc2 (192.168.10.11) ──> Gets 198.51.100.17 from pool
-  ...
-  15th host                ──> Gets 198.51.100.30 (last IP)
-  16th host                ──> DENIED (pool exhausted!)
+```mermaid
+graph TD
+    subgraph Pool ["HQ-PUBLIC-POOL (198.51.100.16 - 198.51.100.30)"]
+        ip16["198.51.100.16"]
+        ip17["198.51.100.17"]
+        ip30["198.51.100.30"]
+    end
+
+    pc1["💻 hq-pc1 (192.168.10.10)"] -->|Allocated| ip16
+    pc2["💻 hq-pc2 (192.168.10.11)"] -->|Allocated| ip17
+    pc15["💻 15th Host"] -->|Allocated| ip30
+    pc16["💻 16th Host"] -->|Requests IP| exhaust{"Pool Exhausted?"}
+    exhaust -->|Yes| denied["❌ Connection Denied"]
 ```
 
 #### ✅ Verification
@@ -614,12 +637,25 @@ ip nat inside source list PAT-GENERAL interface Ethernet0/1 overload
 
 #### 🔬 How It Works
 
-```
-  br1-pc1 (192.168.20.10:49001)  ──>  100.64.0.2:1024  ──>  203.0.113.100
-  br1-pc2 (192.168.20.11:49001)  ──>  100.64.0.2:1025  ──>  203.0.113.100
-  br1-pc1 (192.168.20.10:49002)  ──>  100.64.0.2:1026  ──>  203.0.113.100
+```mermaid
+graph TD
+    subgraph LAN ["Inside Local LAN Subnet"]
+        pc1_f1["br1-pc1 (192.168.20.10:49001)"]
+        pc2_f1["br1-pc2 (192.168.20.11:49001)"]
+        pc1_f2["br1-pc1 (192.168.20.10:49002)"]
+    end
 
-  Same public IP (100.64.0.2), different source ports!
+    subgraph NAT ["BR1 Router PAT Translation"]
+        ip_p1["100.64.0.2:1024"]
+        ip_p2["100.64.0.2:1025"]
+        ip_p3["100.64.0.2:1026"]
+    end
+
+    ext["🖥️ ext-srv (203.0.113.100)"]
+
+    pc1_f1 -->|Mapped to| ip_p1 --> ext
+    pc2_f1 -->|Mapped to| ip_p2 --> ext
+    pc1_f2 -->|Mapped to| ip_p3 --> ext
 ```
 
 #### ✅ Verification
@@ -682,12 +718,14 @@ ip nat inside source route-map POLICY-NAT pool BR1-POLICY-POOL overload
 
 #### 🔬 How It Works
 
-```
-  Traffic to 203.0.113.0/24:
-    br1-pc1 → MATCHES route-map POLICY-NAT → NAT via policy rule
-  
-  Traffic to anything else (e.g., 198.51.100.0/24):
-    br1-pc1 → DOES NOT match route-map → NAT via PAT-GENERAL (Scenario 4)
+```mermaid
+graph TD
+    pc["💻 Packet from br1-pc1"] --> dest{"Destination Subnet?"}
+    dest -->|203.0.113.0/24| match{"Matches POLICY-NAT Route-Map?"}
+    dest -->|Other Subnets| general["PAT-GENERAL (Scenario 4)"]
+
+    match -->|Yes| policy["Policy NAT: Translated to 100.64.0.10"]
+    general --> translated["General PAT: Translated to 100.64.0.2"]
 ```
 
 #### ✅ Verification
@@ -756,23 +794,25 @@ ip route 10.20.20.0 255.255.255.0 100.64.0.5
 
 #### 🔬 How It Works
 
-```
-  BR2-PC perspective:
-    "I'm sending to 10.20.20.10" (thinks it's a unique host)
+```mermaid
+sequenceDiagram
+    autonumber
+    actor br2_pc as br2-pc (192.168.10.10)
+    participant br2 as BR2 Router (Twice NAT)
+    participant isp as ISP Backbone
+    actor hq_pc as hq-pc1 (192.168.10.10)
 
-  What happens on BR2 router:
-    Original:     src=192.168.10.10  dst=10.20.20.10
-    After NAT:    src=10.10.10.10    dst=192.168.10.10
-                        ↑                    ↑
-                  BR2's NAT'd          HQ's real
-                  source address       address (restored)
+    Note over br2_pc,hq_pc: Outbound Path (br2-pc to hq-pc1)
+    br2_pc->>br2: Packet (src=192.168.10.10, dst=10.20.20.10)
+    Note over br2: Translate source: 192.168.10.10 -> 10.10.10.10<br/>Translate destination: 10.20.20.10 -> 192.168.10.10
+    br2->>isp: Packet (src=10.10.10.10, dst=192.168.10.10)
+    isp->>hq_pc: Routed packet (src=10.10.10.10, dst=192.168.10.10)
 
-  On the wire to ISP:
-    src=10.10.10.10  dst=192.168.10.10  → routed to HQ
-
-  Return traffic:
-    src=192.168.10.10  dst=10.10.10.10  → routed back to BR2
-    BR2 NAT reverses: src=10.20.20.10  dst=192.168.10.10
+    Note over br2_pc,hq_pc: Inbound Return Path (hq-pc1 to br2-pc)
+    hq_pc->>isp: Reply (src=192.168.10.10, dst=10.10.10.10)
+    isp->>br2: Routed reply (src=192.168.10.10, dst=10.10.10.10)
+    Note over br2: Restore source: 192.168.10.10 -> 10.20.20.10<br/>Restore destination: 10.10.10.10 -> 192.168.10.10
+    br2->>br2_pc: Reply (src=10.20.20.10, dst=192.168.10.10)
 ```
 
 #### ✅ Verification
@@ -860,24 +900,31 @@ interface GigabitEthernet4
 
 #### 🔬 How It Works (ISP-Reflection Path)
 
-```
-  Step 1: hq-pc1 sends packet
-          src=192.168.10.10  dst=198.51.100.10 (DMZ server public IP)
+```mermaid
+sequenceDiagram
+    autonumber
+    actor client as hq-pc1 (192.168.10.10)
+    participant hq as HQ Router (Gi3 inside / Gi2 outside / Gi4 inside)
+    participant isp as ISP Router (198.51.100.1)
+    actor server as dmz-srv (172.16.0.100)
 
-  Step 2: Arrives on HQ Gi3 (inside). Routing determines the destination
-          is reachable via the default route out Gi2 (outside).
-          As it exits Gi2, source NAT translates:
-          src: 192.168.10.10 → 198.51.100.16 (from Dynamic pool)
+    Note over client,server: Outbound Request (hairpin Loop)
+    client->>hq: Packet destined to 198.51.100.10
+    Note over hq: Routed out Gi2 (TO_ISP) <br/>Source NAT: 192.168.10.10 -> 198.51.100.16
+    hq->>isp: Packet (src=198.51.100.16, dst=198.51.100.10)
+    Note over isp: Route 198.51.100.10 back to HQ
+    isp->>hq: Packet (src=198.51.100.16, dst=198.51.100.10)
+    Note over hq: Arrives on Gi2 (outside) <br/>Destination NAT: 198.51.100.10 -> 172.16.0.100
+    hq->>server: Packet routed out Gi4 to server (src=198.51.100.16, dst=172.16.0.100)
 
-  Step 3: Packet travels to ISP router (198.51.100.1) and is routed
-          back to HQ's public WAN IP (198.51.100.2).
-
-  Step 4: Arrives back on HQ Gi2 (outside). Destination NAT translates:
-          dst: 198.51.100.10 → 172.16.0.100 (DMZ server private IP)
-          Packet is routed out Gi4 (inside) to the DMZ server.
-
-  Step 5: dmz-srv responds to 198.51.100.16. The reply travels in reverse,
-          reflecting through the ISP to reach hq-pc1.
+    Note over client,server: Return Reply Path (Reversed)
+    server->>hq: Reply destined to 198.51.100.16
+    Note over hq: Routed out Gi2 (TO_ISP) <br/>Source NAT: 172.16.0.100 -> 198.51.100.10
+    hq->>isp: Packet (src=198.51.100.10, dst=198.51.100.16)
+    Note over isp: Route 198.51.100.16 back to HQ
+    isp->>hq: Packet (src=198.51.100.10, dst=198.51.100.16)
+    Note over hq: Arrives on Gi2 (outside) <br/>Destination NAT: 198.51.100.16 -> 192.168.10.10
+    hq->>client: Packet routed out Gi3 to client (src=198.51.100.10, dst=192.168.10.10)
 ```
 
 #### ✅ Verification
