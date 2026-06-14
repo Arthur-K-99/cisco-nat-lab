@@ -1073,7 +1073,7 @@ troubleshooting:
 
 ```
   ┌─────────────────────────────────────────────────────────┐
-  │              INSIDE → OUTSIDE Traffic Flow               │
+  │              INSIDE → OUTSIDE Traffic Flow              │
   │                                                         │
   │  1. Routing decision (uses INSIDE LOCAL address)        │
   │  2. Check ip nat inside source rules                    │
@@ -1082,7 +1082,7 @@ troubleshooting:
   └─────────────────────────────────────────────────────────┘
 
   ┌─────────────────────────────────────────────────────────┐
-  │              OUTSIDE → INSIDE Traffic Flow               │
+  │              OUTSIDE → INSIDE Traffic Flow              │
   │                                                         │
   │  1. Translate destination (INSIDE GLOBAL → LOCAL)       │
   │  2. Routing decision (uses INSIDE LOCAL address)        │
@@ -1116,7 +1116,7 @@ troubleshooting:
   Inside Local     Inside Global   |  Outside Local    Outside Global
   (real private)   (NAT'd public)  |  (from inside)    (real public)
                                    |
-  172.16.0.100 ←→ 198.51.100.10   |  203.0.113.100 ←→ 203.0.113.100
+  172.16.0.100 ←→ 198.51.100.10    |  203.0.113.100 ←→ 203.0.113.100
                                    |
               ip nat inside        |         ip nat outside
 ```
