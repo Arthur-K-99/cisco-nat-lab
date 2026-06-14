@@ -8,8 +8,8 @@
       "name": "Internet / Public Zone",
       "level": "1",
       "position": {
-        "x": 450,
-        "y": 10
+        "x": 467.9340194857633,
+        "y": 21.604365549611586
       },
       "width": 300,
       "height": 110,
@@ -25,8 +25,8 @@
       "name": "HQ Site",
       "level": "1",
       "position": {
-        "x": 20,
-        "y": 300
+        "x": 419.8231403002537,
+        "y": 312.65930787230354
       },
       "width": 380,
       "height": 420,
@@ -42,8 +42,8 @@
       "name": "Branch 1 Site",
       "level": "1",
       "position": {
-        "x": 480,
-        "y": 300
+        "x": 56.968128600523016,
+        "y": 151.25313250043328
       },
       "width": 280,
       "height": 420,
@@ -59,8 +59,8 @@
       "name": "Branch 2 (Overlapping Subnet)",
       "level": "1",
       "position": {
-        "x": 880,
-        "y": 300
+        "x": 881.054942322692,
+        "y": 149.14324785504937
       },
       "width": 240,
       "height": 280,
@@ -77,10 +77,112 @@
     {
       "id": "ext-srv",
       "position": {
-        "x": 600,
-        "y": 50
+        "x": 604.2197692907679,
+        "y": 57.89011535461607
       },
       "groupId": "group-internet"
+    },
+    {
+      "id": "hq",
+      "interfacePattern": "Gi{n}",
+      "position": {
+        "x": 599.8231403002537,
+        "y": 362.65930787230354
+      },
+      "groupId": "group-hq"
+    },
+    {
+      "id": "br1",
+      "interfacePattern": "e0/{n}",
+      "position": {
+        "x": 196.9681286005229,
+        "y": 201.25313250043328
+      },
+      "groupId": "group-br1"
+    },
+    {
+      "id": "br2",
+      "interfacePattern": "e0/{n}",
+      "position": {
+        "x": 1001.054942322692,
+        "y": 199.14324785504937
+      },
+      "groupId": "group-br2"
+    },
+    {
+      "id": "hq-sw",
+      "interfacePattern": "e0/{n}",
+      "position": {
+        "x": 499.8231403002537,
+        "y": 512.6593078723037
+      },
+      "groupId": "group-hq"
+    },
+    {
+      "id": "dmz-sw",
+      "interfacePattern": "e0/{n}",
+      "position": {
+        "x": 699.8231403002537,
+        "y": 512.6593078723037
+      },
+      "groupId": "group-hq"
+    },
+    {
+      "id": "br1-sw",
+      "interfacePattern": "e0/{n}",
+      "position": {
+        "x": 196.9681286005229,
+        "y": 351.2531325004333
+      },
+      "groupId": "group-br1"
+    },
+    {
+      "id": "hq-pc1",
+      "position": {
+        "x": 469.8231403002537,
+        "y": 662.6593078723037
+      },
+      "groupId": "group-hq"
+    },
+    {
+      "id": "hq-pc2",
+      "position": {
+        "x": 569.8231403002537,
+        "y": 662.6593078723037
+      },
+      "groupId": "group-hq"
+    },
+    {
+      "id": "dmz-srv",
+      "position": {
+        "x": 699.8231403002537,
+        "y": 662.6593078723037
+      },
+      "groupId": "group-hq"
+    },
+    {
+      "id": "br1-pc1",
+      "position": {
+        "x": 146.96812860052293,
+        "y": 501.2531325004333
+      },
+      "groupId": "group-br1"
+    },
+    {
+      "id": "br1-pc2",
+      "position": {
+        "x": 246.96812860052304,
+        "y": 501.2531325004333
+      },
+      "groupId": "group-br1"
+    },
+    {
+      "id": "br2-pc",
+      "position": {
+        "x": 1001.054942322692,
+        "y": 349.14324785504937
+      },
+      "groupId": "group-br2"
     },
     {
       "id": "isp",
@@ -89,111 +191,21 @@
         "x": 600,
         "y": 200
       }
-    },
-    {
-      "id": "hq",
-      "interfacePattern": "Gi{n}",
-      "position": {
-        "x": 200,
-        "y": 350
-      },
-      "groupId": "group-hq"
-    },
-    {
-      "id": "br1",
-      "interfacePattern": "e0/{n}",
-      "position": {
-        "x": 620,
-        "y": 350
-      },
-      "groupId": "group-br1"
-    },
-    {
-      "id": "br2",
-      "interfacePattern": "e0/{n}",
-      "position": {
-        "x": 1000,
-        "y": 350
-      },
-      "groupId": "group-br2"
-    },
-    {
-      "id": "hq-sw",
-      "interfacePattern": "e0/{n}",
-      "position": {
-        "x": 100,
-        "y": 500
-      },
-      "groupId": "group-hq"
-    },
-    {
-      "id": "dmz-sw",
-      "interfacePattern": "e0/{n}",
-      "position": {
-        "x": 300,
-        "y": 500
-      },
-      "groupId": "group-hq"
-    },
-    {
-      "id": "br1-sw",
-      "interfacePattern": "e0/{n}",
-      "position": {
-        "x": 620,
-        "y": 500
-      },
-      "groupId": "group-br1"
-    },
-    {
-      "id": "hq-pc1",
-      "position": {
-        "x": 70,
-        "y": 650
-      },
-      "groupId": "group-hq"
-    },
-    {
-      "id": "hq-pc2",
-      "position": {
-        "x": 170,
-        "y": 650
-      },
-      "groupId": "group-hq"
-    },
-    {
-      "id": "dmz-srv",
-      "position": {
-        "x": 300,
-        "y": 650
-      },
-      "groupId": "group-hq"
-    },
-    {
-      "id": "br1-pc1",
-      "position": {
-        "x": 570,
-        "y": 650
-      },
-      "groupId": "group-br1"
-    },
-    {
-      "id": "br1-pc2",
-      "position": {
-        "x": 670,
-        "y": 650
-      },
-      "groupId": "group-br1"
-    },
-    {
-      "id": "br2-pc",
-      "position": {
-        "x": 1000,
-        "y": 500
-      },
-      "groupId": "group-br2"
     }
   ],
   "edgeAnnotations": [],
   "aliasEndpointAnnotations": [],
-  "viewerSettings": {}
+  "viewerSettings": {
+    "style": "default",
+    "linkLabelMode": "show-all",
+    "lastNonTelemetryLinkLabelMode": "show-all",
+    "telemetryNodeSizePx": 40,
+    "telemetryInterfaceSizePercent": 100,
+    "showRateLabels": false,
+    "autoCreateTrafficRateAnnotations": false,
+    "gridLineWidth": 0.5,
+    "gridStyle": "dotted",
+    "gridColor": null,
+    "gridBgColor": null
+  }
 }
