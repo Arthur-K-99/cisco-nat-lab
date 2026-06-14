@@ -681,32 +681,30 @@ graph TD
         ip_p3["100.64.0.2:1026"]
     end
 
-    ext["🖥️ ext-srv (203.0.113.100)"]
+    dest["🖥️ dmz-srv (198.51.100.10)"]
 
-    pc1_f1 -->|Mapped to| ip_p1 --> ext
-    pc2_f1 -->|Mapped to| ip_p2 --> ext
-    pc1_f2 -->|Mapped to| ip_p3 --> ext
+    pc1_f1 -->|Mapped to| ip_p1 --> dest
+    pc2_f1 -->|Mapped to| ip_p2 --> dest
+    pc1_f2 -->|Mapped to| ip_p3 --> dest
 ```
 
 #### ✅ Verification
 
+Because general internet traffic should be PATed to the WAN interface IP (`100.64.0.2`), but traffic destined for the `203.0.113.0/24` subnet is intercepted by Scenario 5's Policy NAT (translating to `100.64.0.10`), we test general PAT by communicating with a public address outside of that subnet, such as the DMZ server's public IP `198.51.100.10`.
+
 ```bash
-# Step 1: From br1-pc1, curl the external server
-docker exec -it clab-nat-lab-br1-pc1 curl -s http://203.0.113.100
+# Step 1: From br1-pc1, curl the DMZ server's public IP
+docker exec -it clab-nat-lab-br1-pc1 curl -s http://198.51.100.10
 
 # Step 2: Simultaneously from br1-pc2
-docker exec -it clab-nat-lab-br1-pc2 curl -s http://203.0.113.100
+docker exec -it clab-nat-lab-br1-pc2 curl -s http://198.51.100.10
 
-# Step 3: On ext-srv, capture packets to see the source
-docker exec -it clab-nat-lab-ext-srv tcpdump -i eth1 -n -c 10
-
-# Step 4: Check translations on BR1
+# Step 3: Check translations on BR1
 BR1# show ip nat translations
-# Expected: Both PCs share 100.64.0.2 but with different ports
-# tcp 100.64.0.2:1024    192.168.20.10:49001  203.0.113.100:80   203.0.113.100:80
-# tcp 100.64.0.2:1025    192.168.20.11:49002  203.0.113.100:80   203.0.113.100:80
+# Expected: Both PCs share 100.64.0.2 but with different source ports
+# tcp 100.64.0.2:4096    192.168.20.10:41010  198.51.100.10:80   198.51.100.10:80
 
-# Step 5: Check stats
+# Step 4: Check stats
 BR1# show ip nat statistics
 # Look for: Total active translations, dynamic, extended
 ```
