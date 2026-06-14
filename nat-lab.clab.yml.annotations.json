@@ -2,113 +2,195 @@
   "freeTextAnnotations": [],
   "freeShapeAnnotations": [],
   "trafficRateAnnotations": [],
-  "groupStyleAnnotations": [],
+  "groupStyleAnnotations": [
+    {
+      "id": "group-internet",
+      "name": "Internet / Public Zone",
+      "level": "1",
+      "position": {
+        "x": 450,
+        "y": 10
+      },
+      "width": 300,
+      "height": 110,
+      "backgroundColor": "rgba(33, 150, 243, 0.1)",
+      "borderColor": "#2196F3",
+      "borderWidth": 2,
+      "borderStyle": "dashed",
+      "borderRadius": 8,
+      "zIndex": -1
+    },
+    {
+      "id": "group-hq",
+      "name": "HQ Site",
+      "level": "1",
+      "position": {
+        "x": 20,
+        "y": 300
+      },
+      "width": 380,
+      "height": 420,
+      "backgroundColor": "rgba(76, 175, 80, 0.1)",
+      "borderColor": "#4CAF50",
+      "borderWidth": 2,
+      "borderStyle": "dashed",
+      "borderRadius": 8,
+      "zIndex": -1
+    },
+    {
+      "id": "group-br1",
+      "name": "Branch 1 Site",
+      "level": "1",
+      "position": {
+        "x": 480,
+        "y": 300
+      },
+      "width": 280,
+      "height": 420,
+      "backgroundColor": "rgba(156, 39, 176, 0.1)",
+      "borderColor": "#9C27B0",
+      "borderWidth": 2,
+      "borderStyle": "dashed",
+      "borderRadius": 8,
+      "zIndex": -1
+    },
+    {
+      "id": "group-br2",
+      "name": "Branch 2 (Overlapping Subnet)",
+      "level": "1",
+      "position": {
+        "x": 880,
+        "y": 300
+      },
+      "width": 240,
+      "height": 280,
+      "backgroundColor": "rgba(244, 67, 54, 0.1)",
+      "borderColor": "#F44336",
+      "borderWidth": 2,
+      "borderStyle": "dashed",
+      "borderRadius": 8,
+      "zIndex": -1
+    }
+  ],
   "networkNodeAnnotations": [],
   "nodeAnnotations": [
+    {
+      "id": "ext-srv",
+      "position": {
+        "x": 600,
+        "y": 50
+      },
+      "groupId": "group-internet"
+    },
     {
       "id": "isp",
       "interfacePattern": "e0/{n}",
       "position": {
-        "x": 240,
-        "y": 220
+        "x": 600,
+        "y": 200
       }
     },
     {
       "id": "hq",
       "interfacePattern": "Gi{n}",
       "position": {
-        "x": 360,
-        "y": 360
-      }
+        "x": 200,
+        "y": 350
+      },
+      "groupId": "group-hq"
     },
     {
       "id": "br1",
       "interfacePattern": "e0/{n}",
       "position": {
-        "x": 440,
-        "y": 280
-      }
+        "x": 620,
+        "y": 350
+      },
+      "groupId": "group-br1"
     },
     {
       "id": "br2",
       "interfacePattern": "e0/{n}",
       "position": {
-        "x": 340,
-        "y": 80
-      }
+        "x": 1000,
+        "y": 350
+      },
+      "groupId": "group-br2"
     },
     {
       "id": "hq-sw",
       "interfacePattern": "e0/{n}",
       "position": {
-        "x": 560,
-        "y": 280
-      }
+        "x": 100,
+        "y": 500
+      },
+      "groupId": "group-hq"
     },
     {
       "id": "dmz-sw",
       "interfacePattern": "e0/{n}",
       "position": {
-        "x": 320,
-        "y": 540
-      }
+        "x": 300,
+        "y": 500
+      },
+      "groupId": "group-hq"
     },
     {
       "id": "br1-sw",
       "interfacePattern": "e0/{n}",
       "position": {
-        "x": 580,
-        "y": 420
-      }
-    },
-    {
-      "id": "ext-srv",
-      "position": {
-        "x": 100,
-        "y": 140
-      }
+        "x": 620,
+        "y": 500
+      },
+      "groupId": "group-br1"
     },
     {
       "id": "hq-pc1",
       "position": {
-        "x": 740,
-        "y": 300
-      }
+        "x": 70,
+        "y": 650
+      },
+      "groupId": "group-hq"
     },
     {
       "id": "hq-pc2",
       "position": {
-        "x": 700,
-        "y": 180
-      }
+        "x": 170,
+        "y": 650
+      },
+      "groupId": "group-hq"
     },
     {
       "id": "dmz-srv",
       "position": {
         "x": 300,
-        "y": 700
-      }
+        "y": 650
+      },
+      "groupId": "group-hq"
     },
     {
       "id": "br1-pc1",
       "position": {
-        "x": 560,
-        "y": 600
-      }
+        "x": 570,
+        "y": 650
+      },
+      "groupId": "group-br1"
     },
     {
       "id": "br1-pc2",
       "position": {
-        "x": 720,
-        "y": 540
-      }
+        "x": 670,
+        "y": 650
+      },
+      "groupId": "group-br1"
     },
     {
       "id": "br2-pc",
       "position": {
-        "x": 340,
-        "y": 240
-      }
+        "x": 1000,
+        "y": 500
+      },
+      "groupId": "group-br2"
     }
   ],
   "edgeAnnotations": [],
