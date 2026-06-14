@@ -263,6 +263,36 @@ ghcr.io/arthur-k-99/cisco-c8000v      17.11.01a   # HQ router
 | Twice NAT (BR2 src) | 10.10.10.0/24 | Scenario 6 |
 | Twice NAT (HQ as seen by BR2) | 10.20.20.0/24 | Scenario 6 |
 
+### 🔍 Master IP Address Lookup Table
+
+For quick reference, here is the complete map of every IP address (both physical interfaces and virtual NAT translations) used across the entire lab:
+
+| IP Address | Device | Interface / NAT Role | Description | Scenario(s) |
+|------------|--------|----------------------|-------------|-------------|
+| **203.0.113.100** | `ext-srv` | `eth1` (Physical) | External internet server (simulates a public web host) | All |
+| **203.0.113.1** | `ISP` | `Ethernet0/1` (Physical) | Gateway interface for the external server network | All |
+| **198.51.100.1** | `ISP` | `Ethernet0/2` (Physical) | Gateway interface for the HQ WAN link | All |
+| **198.51.100.2** | `HQ` | `GigabitEthernet2` (Physical) | HQ Router WAN Interface IP (Outside) / Target for Static PAT | All / Scenario 2 |
+| **198.51.100.10** | `HQ` (NAT) | Inside Global (Virtual) | Public Static NAT translation address for `dmz-srv` | Scenario 1, Scenario 7 |
+| **198.51.100.16 – .30** | `HQ` (NAT) | Inside Global Pool (Virtual) | Dynamic NAT address pool for HQ LAN hosts | Scenario 3 |
+| **172.16.0.1** | `HQ` | `GigabitEthernet4` (Physical) | HQ DMZ Gateway IP (Inside) | Scenario 1, 2, 7 |
+| **172.16.0.100** | `dmz-srv` | `eth1` (Physical) | DMZ Web Server IP (Inside Local) | Scenario 1, 2, 7 |
+| **192.168.10.1** | `HQ` | `GigabitEthernet3` (Physical) | HQ LAN Gateway IP (Inside) | Scenario 3, 7 |
+| **192.168.10.10** | `hq-pc1` | `eth1` (Physical) | HQ LAN Host 1 (Inside Local) | Scenario 3, 7 |
+| **192.168.10.11** | `hq-pc2` | `eth1` (Physical) | HQ LAN Host 2 (Inside Local) | Scenario 3 |
+| **100.64.0.1** | `ISP` | `Ethernet0/3` (Physical) | Gateway interface for the Branch 1 WAN link | All |
+| **100.64.0.2** | `BR1` | `Ethernet0/1` (Physical) | BR1 Router WAN Interface IP (Outside) / Target for PAT Overload | All / Scenario 4 |
+| **100.64.0.10** | `BR1` (NAT) | Inside Global Pool (Virtual) | Policy NAT Pool translation address for traffic to Partner | Scenario 5 |
+| **192.168.20.1** | `BR1` | `Ethernet0/2` (Physical) | Branch 1 LAN Gateway IP (Inside) | Scenario 4, 5 |
+| **192.168.20.10** | `br1-pc1` | `eth1` (Physical) | Branch 1 LAN Host 1 (Inside Local) | Scenario 4, 5 |
+| **192.168.20.11** | `br1-pc2` | `eth1` (Physical) | Branch 1 LAN Host 2 (Inside Local) | Scenario 4, 5 |
+| **100.64.0.5** | `ISP` | `Ethernet1/0` (Physical) | Gateway interface for the Branch 2 WAN link | All |
+| **100.64.0.6** | `BR2` | `Ethernet0/1` (Physical) | BR2 Router WAN Interface IP (Outside) | All |
+| **192.168.10.1** | `BR2` | `Ethernet0/2` (Physical) | Branch 2 LAN Gateway IP (Inside) | Scenario 6 |
+| **192.168.10.10** | `br2-pc` | `eth1` (Physical) | Branch 2 LAN Host (Inside Local, overlaps HQ LAN subnet) | Scenario 6 |
+| **10.10.10.10** | `BR2` (NAT) | Inside Global (Virtual) | Twice NAT translated source IP representing `br2-pc` | Scenario 6 |
+| **10.20.20.10** | `BR2` (NAT) | Outside Local (Virtual) | Twice NAT translated destination IP representing HQ host | Scenario 6 |
+
 ---
 
 ## 📁 File Structure
